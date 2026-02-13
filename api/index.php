@@ -47,8 +47,8 @@ $path = $_SERVER['REQUEST_URI'];
   <meta name="theme-color" content="#000000">
 
   <link rel="manifest" href="/manifest.json">
-  <link rel="icon" type="image/jpeg" href="/image.jpeg">
-  <link rel="apple-touch-icon" href="/image.jpeg">
+  <link rel="icon" type="image/jpeg" href="https://ik.imagekit.io/migbb/image.jpeg?updatedAt=1770995065553">
+  <link rel="apple-touch-icon" href="https://ik.imagekit.io/migbb/image.jpeg?updatedAt=1770995065553">
 
   <style>
     :root { --primary: #0A84FF; --success: #30D158; --danger: #FF453A; --bg: #000000; --text: #FFFFFF; --text-secondary: #8E8E93; --input-bg: #1C1C1E; }
@@ -79,7 +79,7 @@ $path = $_SERVER['REQUEST_URI'];
     </div>
   <?php else: ?>
     <div id="view-onboarding" class="view">
-      <img src="/image.jpeg" width="80" style="margin-bottom: 20px; border-radius: 18px;">
+      <img src="https://ik.imagekit.io/migbb/image.jpeg?updatedAt=1770995065553" width="80" style="margin-bottom: 20px; border-radius: 18px;">
       <h1>Welcome</h1>
       <input type="text" id="userNameInput" placeholder="Your Name">
       <button class="btn-primary" onclick="saveName()">Continue</button>
@@ -117,7 +117,7 @@ $path = $_SERVER['REQUEST_URI'];
       if (e.data.type === 'DONE' && Notification.permission === "granted") {
         new Notification("LifeCook: Food Ready!", {
           body: `${e.data.food} completed by ${e.data.name}`,
-          icon: "/image.jpeg"
+          icon: "https://ik.imagekit.io/migbb/image.jpeg?updatedAt=1770995065553"
         });
       }
     };
