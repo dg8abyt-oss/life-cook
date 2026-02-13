@@ -1,8 +1,8 @@
 <?php
 /**
- * LifeCook - Global Bridge Edition
- * Backend: PHP 7.4+ / Vercel Serverless
- * Sync: PubNub Real-time Network
+ * LifeCook - Master Pro Edition
+ * Sync: Supabase Realtime (No-DB Messaging)
+ * Backend: PHP 7.4+ Vercel Runtime
  */
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -15,15 +15,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         "17323143917.17326261250.PLhFGHTxTw@txt.voice.google.com"
     ];
 
-    $food = htmlspecialchars($input['food'] ?? "A mystery dish");
-    $name = htmlspecialchars($input['name'] ?? "A mysterious chef");
+    $food = htmlspecialchars($input['food'] ?? "Mystery Dish");
+    $name = htmlspecialchars($input['name'] ?? "Chef");
 
-    // 1. Locq Dispatch (Google Voice Emails)
+    // 1. Locq Dispatch (Google Voice / Email)
     $payload = [
         "key" => $apiKey,
         "to" => $emails,
         "subject" => " ", 
-        "body" => "LifeCook Update:\n$food is ready!\nPrepared by: $name"
+        "body" => "LifeCook Update:\n$food is ready!\nChef: $name"
     ];
 
     $ch = curl_init('https://locq.personal.dhruvs.host/api/send');
@@ -44,7 +44,8 @@ $iconUrl = "https://ik.imagekit.io/migbb/image.jpeg?updatedAt=1770995065553";
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>LifeCook Pro</title>
+    <title>LifeCook Master</title>
+    
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -54,7 +55,7 @@ $iconUrl = "https://ik.imagekit.io/migbb/image.jpeg?updatedAt=1770995065553";
     <link rel="icon" type="image/jpeg" href="<?php echo $iconUrl; ?>">
     <link rel="apple-touch-icon" href="<?php echo $iconUrl; ?>">
 
-    <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.2.2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
         :root {
@@ -67,61 +68,67 @@ $iconUrl = "https://ik.imagekit.io/migbb/image.jpeg?updatedAt=1770995065553";
             --text-secondary: #8E8E93;
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: -apple-system, system-ui, sans-serif; }
-        body { margin: 0; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { 
+            margin: 0; background: var(--bg); color: var(--text); 
+            height: 100vh; overflow: hidden; display: flex; flex-direction: column;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+        }
 
         .view {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             padding: 40px 24px; opacity: 0; pointer-events: none;
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); transform: translateY(20px);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); transform: scale(0.9);
         }
 
-        .view.active { opacity: 1; pointer-events: all; transform: translateY(0); z-index: 10; }
+        .view.active { opacity: 1; pointer-events: all; transform: scale(1); z-index: 10; }
 
+        /* Premium UI Elements */
+        .orb-wrapper { position: relative; margin-bottom: 40px; }
         .orb {
-            width: 120px; height: 120px;
+            width: 140px; height: 140px;
             background: linear-gradient(135deg, var(--primary), var(--success));
-            border-radius: 50%; margin-bottom: 40px;
-            box-shadow: 0 0 60px rgba(48, 209, 88, 0.3);
-            animation: breathe 3s infinite ease-in-out;
+            border-radius: 50%; box-shadow: 0 0 80px rgba(48, 209, 88, 0.3);
+            animation: breathe 4s infinite ease-in-out;
         }
 
-        @keyframes breathe { 0%, 100% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.1); filter: brightness(1.3); } }
+        @keyframes breathe { 0%, 100% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.15); filter: brightness(1.2); } }
 
-        h1 { font-size: 42px; font-weight: 900; margin: 0; letter-spacing: -2px; }
-        p { color: var(--text-secondary); margin: 10px 0 40px 0; font-size: 18px; }
+        h1 { font-size: 48px; font-weight: 900; margin: 0; letter-spacing: -2px; text-align: center; }
+        p { color: var(--text-secondary); margin: 10px 0 40px 0; font-size: 19px; text-align: center; }
 
-        .input-group { width: 100%; max-width: 400px; margin-bottom: 25px; }
-        .input-label { font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px; display: block; }
+        .input-group { width: 100%; max-width: 420px; margin-bottom: 25px; }
+        .input-label { font-size: 13px; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 10px; display: block; padding-left: 5px; }
         
         input {
-            width: 100%; background: var(--card); border: 1px solid #333;
-            border-radius: 18px; padding: 20px; font-size: 18px; color: #fff; outline: none;
-            transition: border-color 0.3s;
+            width: 100%; background: var(--card); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px; padding: 22px; font-size: 18px; color: #fff; outline: none;
+            transition: 0.3s;
         }
-        input:focus { border-color: var(--primary); }
+        input:focus { border-color: var(--primary); background: #252528; }
 
         button {
-            width: 100%; max-width: 400px; padding: 20px; border-radius: 20px;
-            font-size: 18px; font-weight: 700; border: none; cursor: pointer;
-            transition: 0.2s cubic-bezier(0.2, 0, 0.2, 1);
+            width: 100%; max-width: 420px; padding: 22px; border-radius: 22px;
+            font-size: 19px; font-weight: 800; border: none; cursor: pointer;
+            transition: 0.3s cubic-bezier(0.2, 0, 0.2, 1);
         }
-        button:active { transform: scale(0.97); opacity: 0.8; }
+        button:active { transform: scale(0.96); opacity: 0.8; }
 
-        .btn-primary { background: var(--primary); color: white; box-shadow: 0 10px 25px rgba(10, 132, 255, 0.3); }
-        .btn-success { background: var(--success); color: white; margin-top: 20px; box-shadow: 0 10px 25px rgba(48, 209, 88, 0.3); }
+        .btn-primary { background: var(--primary); color: white; box-shadow: 0 15px 30px rgba(10, 132, 255, 0.3); }
+        .btn-success { background: var(--success); color: white; margin-top: 20px; box-shadow: 0 15px 30px rgba(48, 209, 88, 0.3); }
         .btn-ghost { background: var(--card); color: white; border: 1px solid #333; margin-top: 20px; }
 
-        .transcript {
-            margin-top: 30px; font-family: "SF Mono", monospace; font-size: 14px;
-            color: var(--primary); min-height: 24px; text-transform: uppercase; letter-spacing: 1px;
+        .transcript-box {
+            margin-top: 30px; font-family: "SF Mono", monospace; font-size: 15px;
+            color: var(--primary); text-transform: uppercase; letter-spacing: 2px;
+            height: 24px; text-align: center; font-weight: 700;
         }
 
         #toast {
-            position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%) translateY(100px);
-            background: var(--success); color: white; padding: 16px 32px; border-radius: 40px;
-            font-weight: 700; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: 0.4s; z-index: 1000;
+            position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%) translateY(120px);
+            background: var(--primary); color: white; padding: 18px 36px; border-radius: 50px;
+            font-weight: 800; box-shadow: 0 20px 50px rgba(0,0,0,0.6); transition: 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28); z-index: 1000;
         }
         #toast.show { transform: translateX(-50%) translateY(0); }
     </style>
@@ -129,68 +136,62 @@ $iconUrl = "https://ik.imagekit.io/migbb/image.jpeg?updatedAt=1770995065553";
 <body>
 
     <div id="view-onboarding" class="view">
-        <img src="<?php echo $iconUrl; ?>" width="120" style="border-radius: 30px; margin-bottom: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.4);">
+        <img src="<?php echo $iconUrl; ?>" width="140" style="border-radius: 35px; margin-bottom: 30px; box-shadow: 0 25px 50px rgba(0,0,0,0.5);">
         <h1>LifeCook</h1>
-        <p>Your AI Kitchen Assistant</p>
+        <p>Intelligent Kitchen Intelligence</p>
         <div class="input-group">
-            <span class="input-label">Identity</span>
-            <input type="text" id="nameIn" placeholder="Who is cooking?" autocomplete="off">
+            <span class="input-label">Chef Name</span>
+            <input type="text" id="nameIn" placeholder="Your Name" autocomplete="off">
         </div>
-        <button class="btn-primary" onclick="App.saveProfile()">Initialize App</button>
+        <button class="btn-primary" onclick="App.saveProfile()">Get Started</button>
     </div>
 
     <div id="view-dashboard" class="view">
-        <h1>Dashboard</h1>
-        <p>Welcome, <span id="user-display" style="color:#fff; font-weight:700;"></span></p>
+        <h1 id="greeting">Welcome</h1>
+        <p>Ready to start a new dish?</p>
         <div class="input-group">
-            <span class="input-label">Active Meal</span>
-            <input type="text" id="foodIn" placeholder="e.g. Pasta Carbonara" autocomplete="off">
+            <span class="input-label">Currently Making</span>
+            <input type="text" id="foodIn" placeholder="e.g. Ribeye Steak" autocomplete="off">
         </div>
-        <button class="btn-primary" onclick="App.startSession()">Start Voice Session</button>
-        <button id="notif-btn" class="btn-ghost" onclick="App.enableNotifs()">🔔 Sync This Device</button>
+        <button class="btn-primary" onclick="App.startSession()">Enter Kitchen</button>
+        <button id="notif-btn" class="btn-ghost" onclick="App.enableNotifs()">🔔 Sync PC Receiver</button>
     </div>
 
     <div id="view-active" class="view">
-        <div class="orb"></div>
+        <div class="orb-wrapper"><div class="orb"></div></div>
         <h1 id="status-title">Listening...</h1>
-        <p id="food-display" style="margin-bottom:10px;"></p>
-        <div class="transcript" id="transcript-box">---</div>
-        <button class="btn-success" onclick="App.triggerCompletion()">Manual Finish</button>
-        <button class="btn-ghost" style="border:none;" onclick="App.stopSession()">Cancel Session</button>
+        <p id="food-display"></p>
+        <div class="transcript-box" id="transcript">---</div>
+        <button class="btn-success" onclick="App.triggerCompletion()">Manual Done</button>
+        <button class="btn-ghost" style="border:none;" onclick="App.stopSession()">Cancel</button>
     </div>
 
-    <div id="toast">Broadcast Dispatched!</div>
+    <div id="toast">Broadcast Sent</div>
 
     <script>
         const App = {
             recognition: null,
             wakeLock: null,
             isCooking: false,
-            pubnub: null,
-            channel: 'lifecook_global_dhruv', // Private sync channel
+            channel: null,
+            supabase: null,
 
-            init() {
-                // Initialize PubNub for Real-time Global Sync
-                this.pubnub = new PubNub({
-                    publishKey: 'pub-c-46a482d8-639a-4161-9c17-45e3f4124996', // Demo Key
-                    subscribeKey: 'sub-c-57270f20-8e1d-11e8-a72a-9e7379d750d5', // Demo Key
-                    userId: "user-" + Math.random().toString(36).substring(7)
-                });
-
-                // Listen for messages from ANY device
-                this.pubnub.subscribe({ channels: [this.channel] });
-                this.pubnub.addListener({
-                    message: (s) => {
-                        const data = s.message;
-                        if (data.type === 'COMPLETE' && Notification.permission === "granted") {
-                            this.notifySystem(data.food, data.name);
-                        }
-                    }
-                });
+            async init() {
+                // Initialize Supabase Bridge (Public Realtime Channel)
+                // Using a generic public project to avoid 400 bad request issues
+                this.supabase = net.supabase.createClient('https://rslqqpqlshqqslhp.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'); 
+                
+                this.channel = this.supabase.channel('lifecook_dhruv');
+                
+                this.channel
+                    .on('broadcast', { event: 'COMPLETE' }, (payload) => {
+                        this.notifySystem(payload.payload.food, payload.payload.name);
+                    })
+                    .subscribe();
 
                 const name = localStorage.getItem('lc_name');
                 if (name) {
-                    document.getElementById('user-display').innerText = name;
+                    document.getElementById('greeting').innerText = "Hi, " + name;
                     this.switchView('view-dashboard');
                 } else {
                     this.switchView('view-onboarding');
@@ -212,33 +213,34 @@ $iconUrl = "https://ik.imagekit.io/migbb/image.jpeg?updatedAt=1770995065553";
                 const n = document.getElementById('nameIn').value.trim();
                 if (!n) return;
                 localStorage.setItem('lc_name', n);
-                document.getElementById('user-display').innerText = n;
-                this.switchView('view-dashboard');
+                location.reload();
             },
 
             async enableNotifs() {
                 const p = await Notification.requestPermission();
                 if (p === "granted") {
                     document.getElementById('notif-btn').innerText = "Sync Active ✅";
-                    this.showToast("Receiver Online");
+                    this.showToast("Receiver Connected");
                 }
             },
 
             notifySystem(food, chef) {
-                navigator.serviceWorker.ready.then(reg => {
-                    reg.showNotification("LifeCook: Order Up!", {
-                        body: `${food} is ready! Chef: ${chef}`,
-                        icon: "<?php echo $iconUrl; ?>",
-                        vibrate: [300, 100, 300]
+                if (Notification.permission === "granted") {
+                    navigator.serviceWorker.ready.then(reg => {
+                        reg.showNotification("LifeCook: " + food, {
+                            body: "Prepared by " + chef,
+                            icon: "<?php echo $iconUrl; ?>",
+                            vibrate: [200, 100, 200]
+                        });
                     });
-                });
+                }
             },
 
             async startSession() {
                 const f = document.getElementById('foodIn').value.trim();
-                if (!f) return alert("What are you making?");
+                if (!f) return alert("What's on the menu?");
                 this.isCooking = true;
-                document.getElementById('food-display').innerText = "PREPARING: " + f;
+                document.getElementById('food-display').innerText = f;
                 this.switchView('view-active');
                 if ('wakeLock' in navigator) {
                     try { this.wakeLock = await navigator.wakeLock.request('screen'); } catch(e){}
@@ -249,7 +251,7 @@ $iconUrl = "https://ik.imagekit.io/migbb/image.jpeg?updatedAt=1770995065553";
             stopSession() {
                 this.isCooking = false;
                 if (this.recognition) this.recognition.stop();
-                if (this.wakeLock) { this.wakeLock.release(); this.wakeLock = null; }
+                if (this.wakeLock) this.wakeLock.release();
                 this.switchView('view-dashboard');
             },
 
@@ -260,7 +262,7 @@ $iconUrl = "https://ik.imagekit.io/migbb/image.jpeg?updatedAt=1770995065553";
                 this.recognition.continuous = true;
                 this.recognition.onresult = (e) => {
                     const t = e.results[e.results.length - 1][0].transcript.toLowerCase();
-                    document.getElementById('transcript-box').innerText = t;
+                    document.getElementById('transcript').innerText = t;
                     if (t.includes("done") || t.includes("finished")) this.triggerCompletion();
                 };
                 this.recognition.onend = () => { if(this.isCooking) this.recognition.start(); };
@@ -273,33 +275,28 @@ $iconUrl = "https://ik.imagekit.io/migbb/image.jpeg?updatedAt=1770995065553";
                 const food = document.getElementById('foodIn').value;
                 const name = localStorage.getItem('lc_name');
                 
-                document.getElementById('status-title').innerText = "BROADCASTING...";
+                document.getElementById('status-title').innerText = "SENDING...";
 
-                // 1. Global PubNub Sync (Wakes up PC)
-                this.pubnub.publish({
-                    channel: this.channel,
-                    message: { type: 'COMPLETE', food, name }
+                // 1. Global Sync (Wakes up PC)
+                this.channel.send({
+                    type: 'broadcast',
+                    event: 'COMPLETE',
+                    payload: { food, name }
                 });
 
                 // 2. Locq API (Emails)
-                try {
-                    await fetch('index.php', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ food, name })
-                    });
-                } catch (err) {}
+                await fetch('index.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ food, name })
+                });
 
-                this.showToast("Dispatched Everywhere");
-                setTimeout(() => {
-                    this.stopSession();
-                    document.getElementById('status-title').innerText = "Listening...";
-                }, 2000);
+                this.showToast();
+                setTimeout(() => { this.stopSession(); }, 2000);
             },
 
-            showToast(msg) {
+            showToast() {
                 const t = document.getElementById('toast');
-                if(msg) t.innerText = msg;
                 t.classList.add('show');
                 setTimeout(() => t.classList.remove('show'), 3000);
             }
