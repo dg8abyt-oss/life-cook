@@ -1,7 +1,7 @@
 {
   "name": "LifeCook",
   "short_name": "LifeCook",
-  "start_url": "/",
+  "start_url": "/?mode=pwa",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
