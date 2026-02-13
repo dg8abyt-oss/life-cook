@@ -5,9 +5,7 @@
     }
   },
   "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/api/index.php"
-    }
+    { "src": "/manifest.json", "dest": "/manifest.json" },
+    { "src": "/(.*)", "dest": "/api/index.php" }
   ]
 }
