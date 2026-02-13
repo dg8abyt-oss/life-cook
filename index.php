@@ -1,9 +1,65 @@
+<?php
+// --- BACKEND LOGIC ---
+
+// Helper function to load .env variables
+function getEnvVar($key) {
+    $path = __DIR__ . '/.env';
+    if (!file_exists($path)) return false;
+    $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos(trim($line), '#') === 0) continue;
+        if (strpos($line, '=') === false) continue;
+        list($name, $value) = explode('=', $line, 2);
+        if (trim($name) == $key) return trim($value);
+    }
+    return false;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    header('Content-Type: application/json');
+    
+    $apiKey = getEnvVar('LOCQ_API_KEY');
+    $emails = [
+        "17323143917.17324659605.-r94vPHz7S@txt.voice.google.com",
+        "17323143917.17326261250.PLhFGHTxTw@txt.voice.google.com"
+    ];
+
+    $input = json_decode(file_get_contents('php://input'), true);
+    $food = isset($input['food']) ? htmlspecialchars($input['food']) : "Something";
+    $name = isset($input['name']) ? htmlspecialchars($input['name']) : "Someone";
+
+    $payload = [
+        "key" => $apiKey,
+        "to" => $emails,
+        "subject" => " ", // Blank subject
+        "body" => "Food:$food\nhas been completed by $name"
+    ];
+
+    // Updated Endpoint: locq.personal
+    $ch = curl_init('https://locq.personal.dhruvs.host/api/send');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+    
+    $response = curl_exec($ch);
+    $error = curl_error($ch);
+    curl_close($ch);
+
+    if ($error) {
+        echo json_encode(["status" => "error", "message" => $error]);
+    } else {
+        echo $response;
+    }
+    exit;
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>LifeCook</title>
-  
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -16,7 +72,6 @@
       --success: #30D158;
       --danger: #FF453A;
       --bg: #000000;
-      --card: #1C1C1E;
       --text: #FFFFFF;
       --text-secondary: #8E8E93;
       --input-bg: #2C2C2E;
@@ -25,9 +80,8 @@
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
     body {
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+      margin: 0; padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
       background-color: var(--bg);
       color: var(--text);
       height: 100vh;
@@ -39,36 +93,19 @@
     }
 
     .view {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      opacity: 0;
-      pointer-events: none;
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 24px; opacity: 0; pointer-events: none;
       transform: scale(0.95);
-      transition: opacity 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), 
-                  transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+      transition: opacity 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
-    .view.active {
-      opacity: 1;
-      pointer-events: all;
-      transform: scale(1);
-      z-index: 10;
-    }
+    .view.active { opacity: 1; pointer-events: all; transform: scale(1); z-index: 10; }
 
     h1 { font-size: 34px; font-weight: 700; text-align: center; margin-bottom: 8px; }
-    p { font-size: 17px; color: var(--text-secondary); text-align: center; margin-bottom: 32px; line-height: 1.4; }
+    p { font-size: 17px; color: var(--text-secondary); text-align: center; margin-bottom: 32px; }
 
     input { width: 100%; max-width: 400px; background: var(--input-bg); border: none; border-radius: 12px; padding: 16px; font-size: 17px; color: var(--text); outline: none; margin-bottom: 24px; }
-    input:focus { background: #3a3a3c; }
-
     button { width: 100%; max-width: 400px; padding: 16px; border-radius: 14px; font-size: 17px; font-weight: 600; border: none; cursor: pointer; transition: transform 0.1s; }
     button:active { transform: scale(0.98); opacity: 0.8; }
 
@@ -88,9 +125,9 @@
 <body>
 
   <div id="view-onboarding" class="view">
-    <div style="font-size: 60px; margin-bottom: 20px;">👨‍🍳</div>
+    <div style="font-size: 60px; margin-bottom: 20px;">👨‍C</div>
     <h1>Welcome</h1>
-    <p>Let's set up your profile for LifeCook.</p>
+    <p>Set up your profile for LifeCook.</p>
     <input type="text" id="userNameInput" placeholder="Your Name" autocomplete="off">
     <button class="btn-primary" onclick="saveName()">Continue</button>
   </div>
@@ -99,7 +136,7 @@
     <div style="font-size: 60px; margin-bottom: 20px;">🥘</div>
     <h1>What's cooking?</h1>
     <p>Enter the dish you are preparing.</p>
-    <input type="text" id="foodInput" placeholder="e.g. Pasta, Steak..." autocomplete="off">
+    <input type="text" id="foodInput" placeholder="e.g. Pasta..." autocomplete="off">
     <button class="btn-primary" onclick="startCooking()">Start Session</button>
     <div style="margin-top: 20px; opacity: 0.5; font-size: 12px;">Logged in as <span id="display-name"></span></div>
   </div>
@@ -108,7 +145,7 @@
     <div class="status-badge">Listening</div>
     <div class="orb-container"><div class="orb"></div></div>
     <h1>Listening...</h1>
-    <p>Keep this screen open.<br>Say <b>"Done"</b> or tap below.</p>
+    <p>Say <b>"Done"</b> or tap below.</p>
     <div class="mic-feedback" id="debug-text"></div>
     <div style="flex-grow: 1;"></div> 
     <button class="btn-success" onclick="triggerCompletion()">I'm Done</button>
@@ -156,22 +193,19 @@
     function stopCooking() {
       isCooking = false;
       if (recognition) recognition.stop();
-      if (wakeLock) wakeLock.release();
+      if (wakeLock) { wakeLock.release(); wakeLock = null; }
       changeView('view-setup');
     }
 
     function startListening() {
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SR) {
-        document.getElementById('debug-text').innerText = "Voice not supported.";
-        return;
-      }
+      if (!SR) return;
       recognition = new SR();
       recognition.continuous = true;
       recognition.interimResults = true;
       recognition.onresult = (e) => {
         const transcript = Array.from(e.results).map(r => r[0].transcript).join('').toLowerCase();
-        document.getElementById('debug-text').innerText = transcript;
+        document.getElementById('debug-text').innerText = "..." + transcript.slice(-20);
         if (transcript.includes("done")) triggerCompletion();
       };
       recognition.onend = () => { if (isCooking) try { recognition.start(); } catch(e) {} };
@@ -182,45 +216,23 @@
       if (!isCooking) return;
       isCooking = false;
       if (recognition) recognition.stop();
-      
-      const h1 = document.querySelector('#view-active h1');
-      h1.innerText = "Sending...";
+      document.querySelector('#view-active h1').innerText = "Sending...";
       
       const food = localStorage.getItem('currentFood');
       const name = localStorage.getItem('lifeCookName');
 
       try {
-        // 1. Get Key and Email List from your Vercel API
-        const response = await fetch('/api/server', { method: 'POST' });
-        const config = await response.json();
-
-        // 2. Prepare the Direct Script Configuration
-        const locqConfig = {
-          key: config.apiKey,
-          to: config.emails, 
-          subject: "LifeCook Alert",
-          body: `<h1>Food Done!</h1><p><b>${food}</b> has been completed by <b>${name}</b>.</p>`
-        };
-
-        // 3. Direct Fetch to Locq-Personal
-        const locqResponse = await fetch('https://locq-personal.dhruvs.host/api/send', {
+        const response = await fetch('index.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(locqConfig)
+          body: JSON.stringify({ food: food, name: name })
         });
-
-        const data = await locqResponse.json();
-
-        if (data.status === 'success') {
-          alert("LifeCook: Notification Sent!");
-        } else {
-          alert("Locq Error: " + data.error);
-        }
-        
+        const data = await response.json();
+        if (data.status === 'success') alert("LifeCook: Notification Sent!");
+        else alert("Error: " + (data.message || data.error));
         stopCooking();
       } catch (err) {
-        console.error("Locq Network Error:", err);
-        alert("Failed to connect to notification server.");
+        alert("Failed to connect to the server.");
         stopCooking();
       }
     }
