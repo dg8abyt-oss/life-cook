@@ -110,25 +110,33 @@ $iconUrl = "https://ik.imagekit.io/migbb/image.jpeg?updatedAt=1770995065553";
       navigator.serviceWorker.register('/sw.js').then(() => console.log("SW Registered"));
     }
 
+// --- UPDATED NOTIFICATION LOGIC ---
     async function enableNotifications() {
-      const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
-      if (!isStandalone && /iPhone|iPad|iPod/.test(navigator.userAgent)) {
-        return alert("iOS Note: You MUST tap 'Share' -> 'Add to Home Screen' first for notifications to work.");
+      // Removed the standalone check for iOS
+      if (!("Notification" in window)) {
+        return alert("This browser does not support notifications.");
       }
-      const p = await Notification.requestPermission();
-      if (p === "granted") alert("Notifications active!");
+
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission === "granted") {
+          alert("Success! Notifications enabled.");
+          
+          // Register Service Worker if not already active to ensure PC/Mobile pickup
+          if ('serviceWorker' in navigator) {
+            const registration = await navigator.serviceWorker.ready;
+            console.log("Service Worker ready for notifications");
+          }
+        } else if (permission === "denied") {
+          alert("Permission denied. You may need to reset site settings in your browser to enable them.");
+        }
+      } catch (err) {
+        console.error("Notification request failed:", err);
+        alert("Could not request notification permission.");
+      }
     }
 
-    bc.onmessage = (e) => {
-      if (e.data.type === 'DONE' && Notification.permission === "granted") {
-        navigator.serviceWorker.ready.then(reg => {
-          reg.showNotification("LifeCook: Food Ready!", {
-            body: `${e.data.food} completed by ${e.data.name}`,
-            icon: "<?php echo $iconUrl; ?>"
-          });
-        });
-      }
-    };
+    // Keep the rest of your logic (triggerCompletion, bc.onmessage, etc.) as is
 
     // [Standard Logic: saveName, changeView, startCooking, stopCooking, startListening...]
     window.onload = () => {
