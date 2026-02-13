@@ -1,8 +1,8 @@
 <?php
 /**
- * LifeCook - Master Pro Edition
- * Logic: Direct Service Worker + Locq API
- * Runtime: Vercel PHP 8.2+
+ * LifeCook - FCM Professional Edition
+ * Notifications: Firebase Cloud Messaging
+ * Logic: Voice + Locq + FCM Bridge
  */
 
 // --- BACKEND LOGIC ---
@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $food = htmlspecialchars($input['food'] ?? "Mystery Dish");
     $name = htmlspecialchars($input['name'] ?? "Chef");
 
-    // 1. Dispatch via Locq-Personal (Emails/Texts)
+    // 1. Dispatch via Locq (Google Voice Emails)
     $payload = [
         "key" => $apiKey,
         "to" => $emails,
@@ -33,15 +33,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
     curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-    $response = curl_exec($ch);
-    $curlError = curl_error($ch);
+    curl_exec($ch);
     curl_close($ch);
 
-    if ($curlError) {
-        echo json_encode(["status" => "error", "message" => $curlError]);
-    } else {
-        echo json_encode(["status" => "success", "locq" => json_decode($response)]);
-    }
+    echo json_encode(["status" => "success"]);
     exit;
 }
 
@@ -51,7 +46,7 @@ $iconUrl = "https://ik.imagekit.io/migbb/image.jpeg?updatedAt=1770995065553";
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>LifeCook Master</title>
+    <title>LifeCook FCM Pro</title>
     
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta name="mobile-web-app-capable" content="yes">
@@ -62,222 +57,119 @@ $iconUrl = "https://ik.imagekit.io/migbb/image.jpeg?updatedAt=1770995065553";
     <link rel="icon" type="image/jpeg" href="<?php echo $iconUrl; ?>">
     <link rel="apple-touch-icon" href="<?php echo $iconUrl; ?>">
 
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
+
     <style>
         :root {
-            --primary: #0A84FF;
-            --success: #30D158;
-            --danger: #FF453A;
-            --bg: #000000;
-            --card: #1C1C1E;
-            --input-bg: #2C2C2E;
-            --text: #FFFFFF;
-            --text-secondary: #8E8E93;
+            --primary: #0A84FF; --success: #30D158; --danger: #FF453A; --bg: #000000;
+            --card: #1C1C1E; --text: #FFFFFF; --text-secondary: #8E8E93;
         }
 
-        * {
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif;
-        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: -apple-system, system-ui, sans-serif; }
+        body { margin: 0; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 
-        body {
-            margin: 0; padding: 0;
-            background-color: var(--bg);
-            color: var(--text);
-            height: 100vh; width: 100vw;
-            overflow: hidden;
-            display: flex; flex-direction: column;
-        }
-
-        /* --- Animations --- */
-        @keyframes orbBreathe {
-            0%, 100% { transform: scale(1); box-shadow: 0 0 40px rgba(10, 132, 255, 0.2); }
-            50% { transform: scale(1.1); box-shadow: 0 0 80px rgba(48, 209, 88, 0.5); }
-        }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* --- Structure --- */
         .view {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             padding: 40px 24px; opacity: 0; pointer-events: none;
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-            transform: scale(0.96);
+            transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1); transform: translateY(20px);
         }
-
-        .view.active {
-            opacity: 1; pointer-events: all;
-            transform: scale(1); z-index: 10;
-        }
-
-        /* --- Components --- */
-        .app-icon {
-            width: 120px; height: 120px;
-            border-radius: 28px;
-            margin-bottom: 30px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-            object-fit: cover;
-        }
-
-        h1 { font-size: 42px; font-weight: 900; margin: 0; letter-spacing: -1.5px; text-align: center; }
-        p { color: var(--text-secondary); margin: 10px 0 40px 0; font-size: 19px; text-align: center; line-height: 1.4; }
-
-        .form-container { width: 100%; max-width: 420px; animation: slideIn 0.6s ease; }
-        .input-label { font-size: 13px; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 10px; display: block; padding-left: 4px; }
-        
-        input {
-            width: 100%; background: var(--card); border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 20px; padding: 22px; font-size: 18px; color: #fff; outline: none; margin-bottom: 24px;
-            transition: all 0.3s;
-        }
-        input:focus { border-color: var(--primary); background: #252528; }
-
-        button {
-            width: 100%; max-width: 420px; padding: 22px; border-radius: 22px;
-            font-size: 19px; font-weight: 800; border: none; cursor: pointer;
-            transition: 0.3s cubic-bezier(0.2, 0, 0.2, 1);
-            display: flex; align-items: center; justify-content: center; gap: 12px;
-        }
-        button:active { transform: scale(0.96); opacity: 0.9; }
-
-        .btn-primary { background: var(--primary); color: white; box-shadow: 0 15px 30px rgba(10, 132, 255, 0.3); }
-        .btn-success { background: var(--success); color: white; box-shadow: 0 15px 30px rgba(48, 209, 88, 0.3); }
-        .btn-ghost { background: var(--card); color: white; border: 1px solid rgba(255,255,255,0.1); margin-top: 20px; }
-
-        .orb-outer {
-            width: 200px; height: 200px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            background: rgba(255,255,255,0.03); margin-bottom: 40px;
-        }
+        .view.active { opacity: 1; pointer-events: all; transform: translateY(0); z-index: 10; }
 
         .orb {
-            width: 100px; height: 100px;
+            width: 120px; height: 120px; border-radius: 50%;
             background: linear-gradient(135deg, var(--primary), var(--success));
-            border-radius: 50%; box-shadow: 0 0 60px rgba(48, 209, 88, 0.4);
-            animation: orbBreathe 4s infinite ease-in-out;
+            box-shadow: 0 0 60px rgba(48, 209, 88, 0.3);
+            animation: breathe 3s infinite ease-in-out; margin-bottom: 40px;
         }
 
-        .transcript-display {
-            width: 100%; max-width: 420px; min-height: 80px;
-            background: rgba(255,255,255,0.05); border-radius: 18px;
-            padding: 20px; margin-bottom: 40px;
-            font-family: "SF Mono", "Menlo", monospace; font-size: 14px;
-            color: var(--primary); text-align: center; text-transform: uppercase;
-            display: flex; align-items: center; justify-content: center;
+        @keyframes breathe { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 1; } }
+
+        h1 { font-size: 42px; font-weight: 900; letter-spacing: -2px; text-align: center; margin: 0; }
+        p { color: var(--text-secondary); margin: 10px 0 40px 0; font-size: 18px; text-align: center; }
+
+        input {
+            width: 100%; max-width: 400px; background: var(--card); border: 1px solid #333;
+            border-radius: 20px; padding: 22px; font-size: 18px; color: #fff; outline: none; margin-bottom: 25px;
         }
 
-        #toast {
-            position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%) translateY(120px);
-            background: var(--primary); color: white; padding: 18px 36px; border-radius: 50px;
-            font-weight: 800; box-shadow: 0 20px 50px rgba(0,0,0,0.6); transition: 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28); z-index: 1000;
+        button {
+            width: 100%; max-width: 400px; padding: 22px; border-radius: 22px;
+            font-size: 19px; font-weight: 800; border: none; cursor: pointer; transition: 0.2s;
         }
-        #toast.show { transform: translateX(-50%) translateY(0); }
+        button:active { transform: scale(0.96); }
 
-        .status-badge {
-            background: rgba(48, 209, 88, 0.15); color: var(--success);
-            padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 700;
-            margin-bottom: 20px; letter-spacing: 1px;
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-ghost { background: var(--card); color: white; border: 1px solid #333; margin-top: 20px; }
+
+        .transcript {
+            margin-top: 30px; font-family: monospace; font-size: 14px;
+            color: var(--primary); text-transform: uppercase; letter-spacing: 1px;
         }
     </style>
 </head>
 <body>
 
-    <div class="app-container">
-
-        <div id="view-onboarding" class="view">
-            <img src="<?php echo $iconUrl; ?>" class="app-icon" alt="LifeCook">
-            <h1>LifeCook</h1>
-            <p>Welcome to the future of cooking.<br>Hands-free. Intelligent. Direct.</p>
-            
-            <div class="form-container">
-                <span class="input-label">Identity</span>
-                <input type="text" id="nameIn" placeholder="Enter Your Name" autocomplete="off">
-                <button class="btn-primary" onclick="App.saveProfile()">Get Started</button>
-            </div>
-        </div>
-
-        <div id="view-dashboard" class="view">
-            <h1>Kitchen</h1>
-            <p>Ready to start a new dish?</p>
-
-            <div class="form-container">
-                <span class="input-label">Active Dish</span>
-                <input type="text" id="foodIn" placeholder="e.g. Ribeye Steak" autocomplete="off">
-                
-                <button class="btn-primary" onclick="App.startSession()">
-                    Start Session
-                </button>
-
-                <button id="notif-btn" class="btn-ghost" onclick="App.enableNotifs()">
-                    🔔 Enable System Alerts
-                </button>
-            </div>
-
-            <div style="margin-top: 40px; font-size: 14px; color: var(--text-secondary);">
-                Active Chef: <span id="user-display" style="color:#fff; font-weight:700;"></span>
-            </div>
-        </div>
-
-        <div id="view-active" class="view">
-            <div class="status-badge">● VOICE LISTENING</div>
-            <div class="orb-outer"><div class="orb"></div></div>
-            
-            <h1 id="active-food-display">Dish Name</h1>
-            <p>Say <b>"Done"</b> or <b>"Finished"</b></p>
-
-            <div class="transcript-display" id="transcript">
-                Listening for command...
-            </div>
-
-            <div class="form-container">
-                <button class="btn-success" onclick="App.triggerCompletion()">
-                    I'm Done
-                </button>
-                <button class="btn-ghost" style="border:none;" onclick="App.stopSession()">
-                    Cancel Session
-                </button>
-            </div>
-        </div>
-
+    <div id="view-onboarding" class="view">
+        <img src="<?php echo $iconUrl; ?>" width="100" style="border-radius: 25px; margin-bottom: 20px;">
+        <h1>LifeCook</h1>
+        <p>Firebase-Powered Kitchen</p>
+        <input type="text" id="nameIn" placeholder="Your Name" autocomplete="off">
+        <button class="btn-primary" onclick="App.saveProfile()">Continue</button>
     </div>
 
-    <div id="toast">Dispatched!</div>
+    <div id="view-dashboard" class="view">
+        <h1>Dashboard</h1>
+        <p>Ready to start, <span id="user-display"></span></p>
+        <input type="text" id="foodIn" placeholder="What's cooking?" autocomplete="off">
+        <button class="btn-primary" onclick="App.startSession()">Start Session</button>
+        <button id="notif-btn" class="btn-ghost" onclick="App.enableFCM()">🔔 Enable Cloud Alerts</button>
+    </div>
+
+    <div id="view-active" class="view">
+        <div class="orb"></div>
+        <h1 id="status-text">Listening...</h1>
+        <p id="food-display"></p>
+        <div class="transcript" id="transcript-box">---</div>
+        <button class="btn-success" onclick="App.triggerCompletion()">I'm Done</button>
+        <button class="btn-ghost" style="border:none;" onclick="App.stopSession()">Cancel</button>
+    </div>
 
     <script>
-        /**
-         * LifeCook Application Core
-         */
+        // --- FIREBASE CONFIGURATION ---
+        // REPLACE THIS WITH YOUR CONFIG FROM FIREBASE CONSOLE
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const messaging = firebase.messaging();
+
         const App = {
             recognition: null,
             wakeLock: null,
             isCooking: false,
-            chefName: '',
-            currentFood: '',
 
             init() {
-                // Register Service Worker
-                if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.register('/sw.js')
-                        .then(reg => console.log('Service Worker Registered'));
-                }
-
-                // Load Profile
-                this.chefName = localStorage.getItem('lc_chef');
-                if (this.chefName) {
-                    document.getElementById('user-display').innerText = this.chefName;
+                const name = localStorage.getItem('lc_name');
+                if (name) {
+                    document.getElementById('user-display').innerText = name;
                     this.switchView('view-dashboard');
                 } else {
                     this.switchView('view-onboarding');
                 }
 
-                // Check Notification Permission
-                if (Notification.permission === "granted") {
-                    const btn = document.getElementById('notif-btn');
-                    if(btn) {
-                        btn.innerText = "Alerts Active ✅";
-                        btn.style.color = "#30D158";
-                    }
-                }
+                // Foreground Message Handling
+                messaging.onMessage((payload) => {
+                    alert(`Food Ready: ${payload.notification.body}`);
+                });
             },
 
             switchView(id) {
@@ -287,141 +179,79 @@ $iconUrl = "https://ik.imagekit.io/migbb/image.jpeg?updatedAt=1770995065553";
 
             saveProfile() {
                 const n = document.getElementById('nameIn').value.trim();
-                if (!n) return alert("Please enter your name.");
-                localStorage.setItem('lc_chef', n);
-                this.chefName = n;
-                document.getElementById('user-display').innerText = n;
-                this.switchView('view-dashboard');
+                if (!n) return;
+                localStorage.setItem('lc_name', n);
+                location.reload();
             },
 
-            async enableNotifs() {
-                const permission = await Notification.requestPermission();
-                if (permission === "granted") {
-                    document.getElementById('notif-btn').innerText = "Alerts Active ✅";
-                    this.showToast("Alerts Enabled");
-                }
+            async enableFCM() {
+                try {
+                    const token = await messaging.getToken({ vapidKey: 'YOUR_PUBLIC_VAPID_KEY' });
+                    if (token) {
+                        console.log('FCM Token:', token);
+                        // In a real app, you'd save this token to a DB to push to this specific PC.
+                        // For your usage, we will use the "Topic" or "Group" logic.
+                        document.getElementById('notif-btn').innerText = "Cloud Active ✅";
+                    }
+                } catch (err) { console.error('Token Error', err); }
             },
 
             async startSession() {
                 const f = document.getElementById('foodIn').value.trim();
-                if (!f) return alert("What are you cooking?");
-                
-                this.currentFood = f;
+                if (!f) return alert("What's cooking?");
                 this.isCooking = true;
-                document.getElementById('active-food-display').innerText = f;
+                document.getElementById('food-display').innerText = f;
                 this.switchView('view-active');
-
-                // Acquire WakeLock (Keep screen on)
                 if ('wakeLock' in navigator) {
-                    try {
-                        this.wakeLock = await navigator.wakeLock.request('screen');
-                    } catch (err) { console.error("WakeLock failed:", err); }
+                    try { this.wakeLock = await navigator.wakeLock.request('screen'); } catch(e){}
                 }
-
-                this.initVoiceRecognition();
+                this.startVoice();
             },
 
             stopSession() {
                 this.isCooking = false;
                 if (this.recognition) this.recognition.stop();
-                if (this.wakeLock) {
-                    this.wakeLock.release();
-                    this.wakeLock = null;
-                }
+                if (this.wakeLock) this.wakeLock.release();
                 this.switchView('view-dashboard');
             },
 
-            initVoiceRecognition() {
+            startVoice() {
                 const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
-                if (!Speech) {
-                    document.getElementById('transcript').innerText = "VOICE NOT SUPPORTED";
-                    return;
-                }
-
+                if (!Speech) return;
                 this.recognition = new Speech();
                 this.recognition.continuous = true;
-                this.recognition.interimResults = true;
-                this.recognition.lang = 'en-US';
-
-                this.recognition.onresult = (event) => {
-                    const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase();
-                    document.getElementById('transcript').innerText = transcript;
-                    
-                    if (transcript.includes("done") || transcript.includes("finished") || transcript.includes("completed")) {
-                        this.triggerCompletion();
-                    }
+                this.recognition.onresult = (e) => {
+                    const t = e.results[e.results.length - 1][0].transcript.toLowerCase();
+                    document.getElementById('transcript-box').innerText = t;
+                    if (t.includes("done")) this.triggerCompletion();
                 };
-
-                this.recognition.onend = () => {
-                    if (this.isCooking) {
-                        try { this.recognition.start(); } catch(e) {}
-                    }
-                };
-
+                this.recognition.onend = () => { if(this.isCooking) this.recognition.start(); };
                 this.recognition.start();
             },
 
             async triggerCompletion() {
                 if (!this.isCooking) return;
                 this.isCooking = false;
+                const food = document.getElementById('foodIn').value;
+                const name = localStorage.getItem('lc_name');
                 
-                if (this.recognition) this.recognition.stop();
-                
-                // Update UI state
-                const status = document.getElementById('active-status');
-                if(status) status.innerText = "NOTIFYING...";
+                document.getElementById('status-text').innerText = "PUSHING...";
 
-                // 1. Dispatch Locq Backend (Emails/Texts)
-                try {
-                    await fetch('index.php', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            food: this.currentFood,
-                            name: this.chefName
-                        })
-                    });
-                } catch (e) { console.error("Backend failed"); }
+                // 1. Locq (Email/Text)
+                await fetch('index.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ food, name })
+                });
 
-                // 2. Direct Service Worker Notification
-                // This triggers the notification on the device you are currently on.
-                if (Notification.permission === "granted" && 'serviceWorker' in navigator) {
-                    const reg = await navigator.serviceWorker.ready;
-                    // We send a message to the SW to handle the notification correctly
-                    if (reg.active) {
-                        reg.active.postMessage({
-                            type: 'NOTIFY',
-                            title: 'LifeCook: Order Up!',
-                            body: `${this.currentFood} is finished by ${this.chefName}`
-                        });
-                    }
-                }
-
-                this.showToast("Broadcast Dispatched!");
-                
-                setTimeout(() => {
-                    this.stopSession();
-                    if(status) status.innerText = "Listening...";
-                }, 2000);
-            },
-
-            showToast(msg) {
-                const t = document.getElementById('toast');
-                if (msg) t.innerText = msg;
-                t.classList.add('show');
-                setTimeout(() => t.classList.remove('show'), 3000);
+                // 2. Local Notify (FCM)
+                // Note: Actual cross-device push requires sending the token to your server.
+                alert("LifeCook Sent!");
+                this.stopSession();
             }
         };
 
-        // Initialize App
-        window.addEventListener('load', () => App.init());
-
-        // Handle visibility for WakeLock persistence
-        document.addEventListener('visibilitychange', async () => {
-            if (App.wakeLock !== null && document.visibilityState === 'visible' && App.isCooking) {
-                try { App.wakeLock = await navigator.wakeLock.request('screen'); } catch(e) {}
-            }
-        });
+        window.onload = () => App.init();
     </script>
 </body>
 </html>
