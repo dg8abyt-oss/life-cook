@@ -10,8 +10,6 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#000000">
 
-  <script src="https://locq.personal.dhruvs.host/locq.js"></script>
-
   <style>
     :root {
       --primary: #0A84FF;
@@ -173,7 +171,7 @@
       recognition.interimResults = true;
       recognition.onresult = (e) => {
         const transcript = Array.from(e.results).map(r => r[0].transcript).join('').toLowerCase();
-        document.getElementById('debug-text').innerText = "..." + transcript.slice(-20);
+        document.getElementById('debug-text').innerText = transcript;
         if (transcript.includes("done")) triggerCompletion();
       };
       recognition.onend = () => { if (isCooking) try { recognition.start(); } catch(e) {} };
@@ -191,28 +189,38 @@
       const food = localStorage.getItem('currentFood');
       const name = localStorage.getItem('lifeCookName');
 
-      if (typeof Locq === 'undefined') {
-        alert("Locq library failed to load. Check script connection.");
-        stopCooking();
-        return;
-      }
-
       try {
+        // 1. Get Key and Email List from your Vercel API
         const response = await fetch('/api/server', { method: 'POST' });
         const config = await response.json();
 
-        const sends = config.emails.map(email => Locq.send({
+        // 2. Prepare the Direct Script Configuration
+        const locqConfig = {
           key: config.apiKey,
-          to: email,
-          subject: " ", 
-          body: `Food: ${food}\nhas been completed by ${name}`
-        }));
+          to: config.emails, 
+          subject: "LifeCook Alert",
+          body: `<h1>Food Done!</h1><p><b>${food}</b> has been completed by <b>${name}</b>.</p>`
+        };
 
-        await Promise.all(sends);
-        alert("LifeCook: Food is Done!");
+        // 3. Direct Fetch to Locq-Personal
+        const locqResponse = await fetch('https://locq-personal.dhruvs.host/api/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(locqConfig)
+        });
+
+        const data = await locqResponse.json();
+
+        if (data.status === 'success') {
+          alert("LifeCook: Notification Sent!");
+        } else {
+          alert("Locq Error: " + data.error);
+        }
+        
         stopCooking();
       } catch (err) {
-        alert("Failed to send notification.");
+        console.error("Locq Network Error:", err);
+        alert("Failed to connect to notification server.");
         stopCooking();
       }
     }
