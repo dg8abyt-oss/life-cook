@@ -183,26 +183,45 @@ $iconUrl = "https://ik.imagekit.io/migbb/image.jpeg?updatedAt=1770995065553";
       recognition.start();
     }
 
-    async function triggerCompletion() {
-      if (!isCooking) return;
-      isCooking = false;
-      document.getElementById('active-status').innerText = "Notifying...";
-      const food = document.getElementById('foodInput').value;
-      const name = localStorage.getItem('lifeCookName');
-      try {
+// Replace your triggerCompletion function with this:
+async function triggerCompletion() {
+    if (!isCooking) return;
+    isCooking = false;
+    if (recognition) recognition.stop();
+    
+    document.getElementById('active-status').innerText = "Notifying...";
+    const food = document.getElementById('foodInput').value;
+    const name = localStorage.getItem('lifeCookName');
+
+    try {
+        // 1. Tell the server (Emails/Logs)
         await fetch('index.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ food, name })
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ food, name })
         });
+
+        // 2. Trigger the notification via Service Worker (Most reliable for PC)
+        if ('serviceWorker' in navigator && Notification.permission === "granted") {
+            const registration = await navigator.serviceWorker.ready;
+            registration.active.postMessage({
+                type: 'SHOW_NOTIFICATION',
+                title: "LifeCook: Food Ready!",
+                body: `${food} has been completed by ${name}`
+            });
+        }
+
+        // 3. Optional Broadcast for other open tabs
         bc.postMessage({ type: 'DONE', food, name });
-        alert("LifeCook Sent!");
+
+        alert("Notification Sent!");
         stopCooking();
-      } catch (e) {
-        alert("Network error.");
+    } catch (e) {
+        console.error(e);
+        alert("Notification error.");
         stopCooking();
-      }
     }
+}
   </script>
 </body>
 </html>
