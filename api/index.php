@@ -1,33 +1,21 @@
 <?php
 // --- BACKEND LOGIC ---
-
-// Helper function to load .env variables
-function getEnvVar($key) {
-    $path = __DIR__ . '/.env';
-    if (!file_exists($path)) return false;
-    $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    foreach ($lines as $line) {
-        if (strpos(trim($line), '#') === 0) continue;
-        if (strpos($line, '=') === false) continue;
-        list($name, $value) = explode('=', $line, 2);
-        if (trim($name) == $key) return trim($value);
-    }
-    return false;
-}
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
     
-    $apiKey = getEnvVar('LOCQ_API_KEY');
+    // 1. CONFIG: Hardcoded Secrets & Emails
+    $apiKey = '0/~ZKoV#P"%Um;KIQ).=N=F6"by16g7Ko%d+D\'1L_5Yu]U2b%]'; 
     $emails = [
         "17323143917.17324659605.-r94vPHz7S@txt.voice.google.com",
         "17323143917.17326261250.PLhFGHTxTw@txt.voice.google.com"
     ];
 
+    // 2. Get Data from Frontend
     $input = json_decode(file_get_contents('php://input'), true);
     $food = isset($input['food']) ? htmlspecialchars($input['food']) : "Something";
     $name = isset($input['name']) ? htmlspecialchars($input['name']) : "Someone";
 
+    // 3. Prepare Payload
     $payload = [
         "key" => $apiKey,
         "to" => $emails,
@@ -35,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         "body" => "Food:$food\nhas been completed by $name"
     ];
 
-    // Updated Endpoint: locq.personal
+    // 4. Send via cURL to Locq
     $ch = curl_init('https://locq.personal.dhruvs.host/api/send');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
@@ -125,7 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
 
   <div id="view-onboarding" class="view">
-    <div style="font-size: 60px; margin-bottom: 20px;">👨‍C</div>
+    <div style="font-size: 60px; margin-bottom: 20px;">👨‍🍳</div>
     <h1>Welcome</h1>
     <p>Set up your profile for LifeCook.</p>
     <input type="text" id="userNameInput" placeholder="Your Name" autocomplete="off">
@@ -229,10 +217,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         });
         const data = await response.json();
         if (data.status === 'success') alert("LifeCook: Notification Sent!");
-        else alert("Error: " + (data.message || data.error));
+        else alert("Error: Sending failed.");
         stopCooking();
       } catch (err) {
-        alert("Failed to connect to the server.");
+        alert("Server Error.");
         stopCooking();
       }
     }
