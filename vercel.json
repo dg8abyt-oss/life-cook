@@ -6,7 +6,7 @@
   },
   "routes": [
     { "src": "/notifications", "dest": "/api/index.php" },
-    { "src": "/image.jpeg", "dest": "/image.jpeg" },
+    { "src": "/sw.js", "dest": "/sw.js" },
     { "src": "/manifest.json", "dest": "/manifest.json" },
     { "src": "/(.*)", "dest": "/api/index.php" }
   ]
