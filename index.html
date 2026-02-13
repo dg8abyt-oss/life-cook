@@ -29,12 +29,51 @@
             height: 100vh;
             border: none;
             overflow: hidden;
-            /* Fix for iOS iframe scrolling */
             -webkit-overflow-scrolling: touch;
         }
     </style>
 </head>
 <body>
-    <iframe src="https://script.google.com/macros/s/AKfycbyoNZS5clGDyesxO_Zhca3uRxF9G0Ar_sYN6h18DReQfR7fHCCzn1JK-jzAQ0zVhtRLWA/exec" allow="microphone; camera; geolocation"></iframe>
+    <script>
+        // --- Wake Lock Script ---
+        let wakeLock = null;
+
+        async function requestWakeLock() {
+            if ('wakeLock' in navigator) {
+                try {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Wake Lock active (Wrapper)');
+                    
+                    wakeLock.addEventListener('release', () => {
+                        console.log('Wake Lock released');
+                    });
+                } catch (err) {
+                    console.error(`Wake Lock Error: ${err.name}, ${err.message}`);
+                }
+            }
+        }
+
+        // Request on load
+        window.addEventListener('load', () => {
+            // Small delay to ensure interaction
+            setTimeout(requestWakeLock, 500);
+            
+            // Also try to request on any touch/click just to be safe
+            document.body.addEventListener('click', requestWakeLock, {once:true});
+        });
+
+        // Re-request when tab becomes visible again
+        document.addEventListener('visibilitychange', async () => {
+            if (wakeLock !== null && document.visibilityState === 'visible') {
+                await requestWakeLock();
+            }
+        });
+    </script>
+
+    <iframe 
+        src="https://script.google.com/macros/s/AKfycbyoNZS5clGDyesxO_Zhca3uRxF9G0Ar_sYN6h18DReQfR7fHCCzn1JK-jzAQ0zVhtRLWA/exec" 
+        allow="microphone; camera; geolocation; screen-wake-lock"
+        sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-top-navigation-by-user-activation">
+    </iframe>
 </body>
 </html>
