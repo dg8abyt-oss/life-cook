@@ -13,7 +13,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $food = htmlspecialchars($input['food'] ?? "Something");
     $name = htmlspecialchars($input['name'] ?? "Someone");
 
-    // Send via Locq
     $payload = [
         "key" => $apiKey,
         "to" => $emails,
@@ -26,14 +25,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
     curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-    $response = curl_exec($ch);
+    curl_exec($ch);
     curl_close($ch);
 
     echo json_encode(["status" => "success", "food" => $food, "name" => $name]);
     exit;
 }
-
 $path = $_SERVER['REQUEST_URI'];
+$iconUrl = "https://ik.imagekit.io/migbb/image.jpeg?updatedAt=1770995065553";
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -47,8 +46,8 @@ $path = $_SERVER['REQUEST_URI'];
   <meta name="theme-color" content="#000000">
 
   <link rel="manifest" href="/manifest.json">
-  <link rel="icon" type="image/jpeg" href="https://ik.imagekit.io/migbb/image.jpeg?updatedAt=1770995065553">
-  <link rel="apple-touch-icon" href="https://ik.imagekit.io/migbb/image.jpeg?updatedAt=1770995065553">
+  <link rel="icon" type="image/jpeg" href="<?php echo $iconUrl; ?>">
+  <link rel="apple-touch-icon" href="<?php echo $iconUrl; ?>">
 
   <style>
     :root { --primary: #0A84FF; --success: #30D158; --danger: #FF453A; --bg: #000000; --text: #FFFFFF; --text-secondary: #8E8E93; --input-bg: #1C1C1E; }
@@ -79,7 +78,7 @@ $path = $_SERVER['REQUEST_URI'];
     </div>
   <?php else: ?>
     <div id="view-onboarding" class="view">
-      <img src="https://ik.imagekit.io/migbb/image.jpeg?updatedAt=1770995065553" width="80" style="margin-bottom: 20px; border-radius: 18px;">
+      <img src="<?php echo $iconUrl; ?>" width="80" style="margin-bottom: 20px; border-radius: 18px;">
       <h1>Welcome</h1>
       <input type="text" id="userNameInput" placeholder="Your Name">
       <button class="btn-primary" onclick="saveName()">Continue</button>
@@ -106,23 +105,32 @@ $path = $_SERVER['REQUEST_URI'];
     let recognition, wakeLock, isCooking = false;
     const bc = new BroadcastChannel('lifecook_push');
 
-    // --- NOTIFICATIONS ---
-    function enableNotifications() {
-      Notification.requestPermission().then(p => {
-        if (p === "granted") alert("Notifications active! Keep this tab open.");
-      });
+    // Register SW
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').then(() => console.log("SW Registered"));
+    }
+
+    async function enableNotifications() {
+      const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+      if (!isStandalone && /iPhone|iPad|iPod/.test(navigator.userAgent)) {
+        return alert("iOS Note: You MUST tap 'Share' -> 'Add to Home Screen' first for notifications to work.");
+      }
+      const p = await Notification.requestPermission();
+      if (p === "granted") alert("Notifications active!");
     }
 
     bc.onmessage = (e) => {
       if (e.data.type === 'DONE' && Notification.permission === "granted") {
-        new Notification("LifeCook: Food Ready!", {
-          body: `${e.data.food} completed by ${e.data.name}`,
-          icon: "https://ik.imagekit.io/migbb/image.jpeg?updatedAt=1770995065553"
+        navigator.serviceWorker.ready.then(reg => {
+          reg.showNotification("LifeCook: Food Ready!", {
+            body: `${e.data.food} completed by ${e.data.name}`,
+            icon: "<?php echo $iconUrl; ?>"
+          });
         });
       }
     };
 
-    // --- APP LOGIC ---
+    // [Standard Logic: saveName, changeView, startCooking, stopCooking, startListening...]
     window.onload = () => {
       const name = localStorage.getItem('lifeCookName');
       if (name && document.getElementById('view-setup')) {
@@ -168,7 +176,7 @@ $path = $_SERVER['REQUEST_URI'];
       recognition.continuous = true;
       recognition.onresult = (e) => {
         const transcript = e.results[e.results.length - 1][0].transcript.toLowerCase();
-        document.getElementById('debug-text').innerText = "Heard: " + transcript;
+        document.getElementById('debug-text').innerText = transcript;
         if (transcript.includes("done")) triggerCompletion();
       };
       recognition.onend = () => { if (isCooking) recognition.start(); };
@@ -179,10 +187,8 @@ $path = $_SERVER['REQUEST_URI'];
       if (!isCooking) return;
       isCooking = false;
       document.getElementById('active-status').innerText = "Notifying...";
-      
       const food = document.getElementById('foodInput').value;
       const name = localStorage.getItem('lifeCookName');
-
       try {
         await fetch('index.php', {
           method: 'POST',
@@ -190,7 +196,7 @@ $path = $_SERVER['REQUEST_URI'];
           body: JSON.stringify({ food, name })
         });
         bc.postMessage({ type: 'DONE', food, name });
-        alert("Notification Sent!");
+        alert("LifeCook Sent!");
         stopCooking();
       } catch (e) {
         alert("Network error.");
