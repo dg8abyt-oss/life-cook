@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // --- CHANNEL 1: Discord Webhook ---
     // Replace with your actual Discord Webhook URL
-    $discordUrl = "YOUR_DISCORD_WEBHOOK_URL_HERE"; 
+    $discordUrl = "https://discord.com/api/webhooks/1471926899264454820/2igTAnahexH62mwSbmQNkP1vqmKrc4C-1TL-cMM_RtOTBGZgjCqOA0mHvK_vQeOuO_E2"; 
     $discordPayload = [
         "content" => "🔔 **LifeCook Alert**",
         "embeds" => [[
