@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <base target="_top">
+  <meta charset="UTF-8">
   <title>LifeCook</title>
   
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#000000">
@@ -64,31 +65,26 @@
       z-index: 10;
     }
 
-    h1 { font-size: 34px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 8px; text-align: center; }
-    p { font-size: 17px; color: var(--text-secondary); text-align: center; margin-top: 0; margin-bottom: 32px; line-height: 1.4; }
+    h1 { font-size: 34px; font-weight: 700; text-align: center; margin-bottom: 8px; }
+    p { font-size: 17px; color: var(--text-secondary); text-align: center; margin-bottom: 32px; line-height: 1.4; }
 
-    .input-group { width: 100%; max-width: 400px; margin-bottom: 24px; }
-    input { width: 100%; background: var(--input-bg); border: none; border-radius: 12px; padding: 16px; font-size: 17px; color: var(--text); outline: none; transition: background 0.2s; }
+    input { width: 100%; max-width: 400px; background: var(--input-bg); border: none; border-radius: 12px; padding: 16px; font-size: 17px; color: var(--text); outline: none; margin-bottom: 24px; }
     input:focus { background: #3a3a3c; }
 
-    button { width: 100%; max-width: 400px; padding: 16px; border-radius: 14px; font-size: 17px; font-weight: 600; border: none; cursor: pointer; transition: transform 0.1s, opacity 0.2s; }
+    button { width: 100%; max-width: 400px; padding: 16px; border-radius: 14px; font-size: 17px; font-weight: 600; border: none; cursor: pointer; transition: transform 0.1s; }
     button:active { transform: scale(0.98); opacity: 0.8; }
 
     .btn-primary { background: var(--primary); color: white; }
     .btn-success { background: var(--success); color: white; margin-bottom: 12px; }
-    .btn-danger { background: rgba(255, 69, 58, 0.15); color: var(--danger); margin-top: 0px;}
+    .btn-danger { background: rgba(255, 69, 58, 0.15); color: var(--danger); }
 
     .orb-container { position: relative; width: 200px; height: 200px; display: flex; justify-content: center; align-items: center; margin-bottom: 30px; }
-    .orb { width: 80px; height: 80px; background: linear-gradient(135deg, #30D158, #0A84FF); border-radius: 50%; position: absolute; box-shadow: 0 0 60px rgba(48, 209, 88, 0.4); animation: breathe 3s infinite ease-in-out; }
-    .ripple { position: absolute; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.1); width: 100%; height: 100%; animation: ripple 2s infinite linear; opacity: 0; }
-    .ripple:nth-child(2) { animation-delay: 0.5s; }
-    .ripple:nth-child(3) { animation-delay: 1s; }
-
+    .orb { width: 80px; height: 80px; background: linear-gradient(135deg, #30D158, #0A84FF); border-radius: 50%; box-shadow: 0 0 60px rgba(48, 209, 88, 0.4); animation: breathe 3s infinite ease-in-out; }
+    
     @keyframes breathe { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 1; } }
-    @keyframes ripple { 0% { transform: scale(0.5); opacity: 0; } 50% { opacity: 0.3; } 100% { transform: scale(1.5); opacity: 0; } }
 
-    .status-badge { background: rgba(255, 255, 255, 0.1); padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 16px; }
-    .mic-feedback { height: 20px; font-size: 14px; color: var(--text-secondary); margin-top: 10px; font-family: monospace; margin-bottom: 20px; }
+    .status-badge { background: rgba(255, 255, 255, 0.1); padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 16px; }
+    .mic-feedback { height: 20px; font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; font-family: monospace; }
   </style>
 </head>
 <body>
@@ -97,9 +93,7 @@
     <div style="font-size: 60px; margin-bottom: 20px;">👨‍🍳</div>
     <h1>Welcome</h1>
     <p>Let's set up your profile for LifeCook.</p>
-    <div class="input-group">
-      <input type="text" id="userNameInput" placeholder="Your Name" autocomplete="off">
-    </div>
+    <input type="text" id="userNameInput" placeholder="Your Name" autocomplete="off">
     <button class="btn-primary" onclick="saveName()">Continue</button>
   </div>
 
@@ -107,18 +101,14 @@
     <div style="font-size: 60px; margin-bottom: 20px;">🥘</div>
     <h1>What's cooking?</h1>
     <p>Enter the dish you are preparing.</p>
-    <div class="input-group">
-      <input type="text" id="foodInput" placeholder="e.g. Pasta, Steak, Rice..." autocomplete="off">
-    </div>
+    <input type="text" id="foodInput" placeholder="e.g. Pasta, Steak..." autocomplete="off">
     <button class="btn-primary" onclick="startCooking()">Start Session</button>
-    <div style="margin-top: 20px; opacity: 0.5; font-size: 12px;">Logged in as <span id="display-name">User</span></div>
+    <div style="margin-top: 20px; opacity: 0.5; font-size: 12px;">Logged in as <span id="display-name"></span></div>
   </div>
 
   <div id="view-active" class="view">
     <div class="status-badge">Listening</div>
-    <div class="orb-container">
-      <div class="ripple"></div><div class="ripple"></div><div class="ripple"></div><div class="orb"></div>
-    </div>
+    <div class="orb-container"><div class="orb"></div></div>
     <h1>Listening...</h1>
     <p>Keep this screen open.<br>Say <b>"Done"</b> or tap below.</p>
     <div class="mic-feedback" id="debug-text"></div>
@@ -132,7 +122,7 @@
     let wakeLock = null;
     let isCooking = false;
 
-    window.onload = function() {
+    window.onload = () => {
       const savedName = localStorage.getItem('lifeCookName');
       if (savedName) {
         document.getElementById('display-name').innerText = savedName;
@@ -142,32 +132,26 @@
       }
     };
 
-    function changeView(viewId) {
-      document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
-      document.getElementById(viewId).classList.add('active');
+    function changeView(id) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
     }
 
     function saveName() {
-      const name = document.getElementById('userNameInput').value;
-      if (!name.trim()) return alert("Please enter your name.");
-      localStorage.setItem('lifeCookName', name);
-      document.getElementById('display-name').innerText = name;
+      const n = document.getElementById('userNameInput').value.trim();
+      if (!n) return;
+      localStorage.setItem('lifeCookName', n);
+      document.getElementById('display-name').innerText = n;
       changeView('view-setup');
     }
 
     async function startCooking() {
-      const food = document.getElementById('foodInput').value;
-      if (!food.trim()) return alert("Please enter a food item.");
-      localStorage.setItem('currentFood', food);
+      const f = document.getElementById('foodInput').value.trim();
+      if (!f) return;
+      localStorage.setItem('currentFood', f);
       isCooking = true;
       changeView('view-active');
-
-      try {
-        if ('wakeLock' in navigator) {
-          wakeLock = await navigator.wakeLock.request('screen');
-        }
-      } catch (err) { console.log('Wake Lock Error', err); }
-
+      try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {}
       startListening();
     }
 
@@ -175,44 +159,29 @@
       isCooking = false;
       if (recognition) recognition.stop();
       if (wakeLock) wakeLock.release();
-      wakeLock = null;
-      document.getElementById('debug-text').innerText = "";
       changeView('view-setup');
     }
 
     function startListening() {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        document.getElementById('debug-text').innerText = "Voice not supported. Use button.";
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) {
+        document.getElementById('debug-text').innerText = "Voice not supported.";
         return;
       }
-      recognition = new SpeechRecognition();
+      recognition = new SR();
       recognition.continuous = true;
       recognition.interimResults = true;
-      recognition.lang = 'en-US';
-
-      recognition.onresult = (event) => {
-        let transcript = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          transcript += event.results[i][0].transcript;
-        }
-        const lower = transcript.toLowerCase();
-        const debugEl = document.getElementById('debug-text');
-        if(debugEl) debugEl.innerText = "..." + lower.slice(-20); 
-
-        if (lower.includes("done")) {
-          triggerCompletion();
-        }
+      recognition.onresult = (e) => {
+        const transcript = Array.from(e.results).map(r => r[0].transcript).join('').toLowerCase();
+        document.getElementById('debug-text').innerText = "..." + transcript.slice(-20);
+        if (transcript.includes("done")) triggerCompletion();
       };
-
-      recognition.onend = () => {
-        if (isCooking) { try { recognition.start(); } catch(e) {} }
-      };
-
-      try { recognition.start(); } catch(e) {}
+      recognition.onend = () => { if (isCooking) try { recognition.start(); } catch(e) {} };
+      recognition.start();
     }
 
     async function triggerCompletion() {
+      if (!isCooking) return;
       isCooking = false;
       if (recognition) recognition.stop();
       
@@ -222,30 +191,28 @@
       const food = localStorage.getItem('currentFood');
       const name = localStorage.getItem('lifeCookName');
 
+      if (typeof Locq === 'undefined') {
+        alert("Locq library failed to load. Check script connection.");
+        stopCooking();
+        return;
+      }
+
       try {
-        // Fetch Key and Email List from your Vercel API
         const response = await fetch('/api/server', { method: 'POST' });
         const config = await response.json();
 
-        // Send to each recipient in the list
-        const sendPromises = config.emails.map(email => {
-          return Locq.send({
-            key: config.apiKey,
-            to: email,
-            subject: " ", 
-            body: `Food:${food}\nhas been completed by ${name}`
-          });
-        });
+        const sends = config.emails.map(email => Locq.send({
+          key: config.apiKey,
+          to: email,
+          subject: " ", 
+          body: `Food: ${food}\nhas been completed by ${name}`
+        }));
 
-        await Promise.all(sendPromises);
-
-        alert("LifeCook: Notification Sent!");
-        h1.innerText = "Listening..."; 
+        await Promise.all(sends);
+        alert("LifeCook: Food is Done!");
         stopCooking();
-
       } catch (err) {
-        console.error(err);
-        alert("Locq Error: Could not send notification.");
+        alert("Failed to send notification.");
         stopCooking();
       }
     }
